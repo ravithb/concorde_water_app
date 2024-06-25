@@ -5,46 +5,21 @@ import { Button, Text } from "react-native";
 
 const MessageBar: React.FC = () => {
 
-  const { 
-    errorMessage, setErrorMessage,
-    infoMessage, setInfoMessage, 
-    successMessage, setSuccessMessage } = useContext(GlobalContext);
+  const { message, setMessage} = useContext(GlobalContext);
 
   useEffect(() => {
-    if(errorMessage != "") {
+    if(message != null) {
       Toast.show({
-        type: 'error',
-        text1: errorMessage,
+        type: message.type,
+        text1: message.message,
         visibilityTime: 3000,
         autoHide: true,
         onHide: () => {
-          setErrorMessage("");
+          setMessage(null);
         }
       });
     }
-    if(infoMessage != "") {
-      Toast.show({
-        type: 'info',
-        text1: infoMessage,
-        visibilityTime: 3000,
-        autoHide: true,
-        onHide: () => {
-          setInfoMessage("");
-        }
-      });
-    }
-    if(successMessage != "") {
-      Toast.show({
-        type: 'success',
-        text1: successMessage,
-        visibilityTime: 3000,
-        autoHide: true,
-        onHide: () => {
-          setSuccessMessage("");
-        }
-      });
-    }
-  }, [errorMessage, infoMessage, successMessage]);
+  }, [message]);
 
   return <><Toast /></>
 

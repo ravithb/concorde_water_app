@@ -63,7 +63,10 @@ export const styles = StyleSheet.create({
     color: '#6aa84f'
   },
   statusYellow:{
-    color: '#ffe599'
+    color: '#ffbd33'
+  },
+  statusBlue:{
+    color: '#82A8C9'
   },
   statusGray:{
     color: '#666666'

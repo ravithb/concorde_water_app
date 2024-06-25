@@ -4,6 +4,11 @@ import { styles } from '../styles/styles';
 import { getColor } from '../utils/utils';
 import GlobalContext from '../contexts/GlobalContext';
 
+
+const CMD_SPRINKLERS_ON="101";
+const CMD_SPRINKLERS_OFF="102";
+const CMD_INLET_OPEN = "103";
+const CMD_INLET_CLOSE = "104";
 interface StatusBox {
   type: string;
   value: string;
@@ -13,19 +18,57 @@ interface StatusBox {
 
 const HomeScreen: React.FC = ({  }) => {
   const { 
-    waterLevel, sprinkelerStatus, pumpStatus, inletValveStatus, errorMessage, setErrorMessage, isConnected, connect
+    waterLevel, sprinkelerStatus, pumpStatus, inletValveStatus, runCommand, isConnected, connect
   } = useContext(GlobalContext);
 
 
-  const [machineStatus, setMachineStatus] = useState<StatusBox[]>([
+  const [controllerStatus, setControllerStatus] = useState<StatusBox[]>([
     {type:"WaterLevel", value:waterLevel, title:"Water Level"},
     {type:"InletValveStatus", value:inletValveStatus, title:"Inlet Valve"}, 
     {type:"SprinklerStatus", value:sprinkelerStatus, title:"Sprinkler Valve"},
     {type:"PumpStatus", value:pumpStatus, title:"Pump"}
   ]);
-  const [system1, setSystem1] = useState(false);
-  const [system2, setSystem2] = useState(false);
-  const [count, setCount] = useState(0);
+  const [manualWatering, setManualWatering] = useState(false);
+  const [manualFilling, setManualFilling] = useState(false);
+  const [sprinklerBtnEnabled, setSprinkerBtnEnabled] = useState(false);
+  const [fillingBtnEnabled, setFillingBtnEnabled] = useState(false);
+  
+  useEffect(() => {
+    setControllerStatus([
+      {type:"WaterLevel", value:waterLevel, title:"Water Level"},
+      {type:"InletValveStatus", value:inletValveStatus, title:"Inlet Valve"}, 
+      {type:"SprinklerStatus", value:sprinkelerStatus, title:"Sprinkler Valve"},
+      {type:"PumpStatus", value:pumpStatus, title:"Pump"}
+    ]);
+    if(!isConnected) {
+      setSprinkerBtnEnabled(false);
+      setFillingBtnEnabled(false);
+      return;
+    }
+
+    if(sprinkelerStatus === "OPEN" && pumpStatus === "ON") {
+      setSprinkerBtnEnabled(true);
+      setManualWatering(false);
+    }else if(sprinkelerStatus === "CLOSED" && pumpStatus === "OFF") {
+      setSprinkerBtnEnabled(true);
+      setManualWatering(true);
+    }else if((sprinkelerStatus === "--" && pumpStatus === "--") 
+      || (sprinkelerStatus == "CLOSED")) {
+      setSprinkerBtnEnabled(true);
+    }else{
+      setSprinkerBtnEnabled(false);
+    }
+
+    if(inletValveStatus === "OPEN") {
+      setFillingBtnEnabled(true);
+      setManualFilling(false);
+    }else if(inletValveStatus === "CLOSED") {
+      setFillingBtnEnabled(true);
+      setManualFilling(true);
+    }else{
+      setFillingBtnEnabled(false);
+    }
+  }, [waterLevel, sprinkelerStatus, pumpStatus, inletValveStatus, isConnected]);
 
   const renderCard = ({ item, index }: { item: StatusBox; index: number }) => {
     return <View style={[styles.card, { backgroundColor: getColor(item.type, item.value, isConnected)  }]}>
@@ -35,15 +78,19 @@ const HomeScreen: React.FC = ({  }) => {
   };
 
   const onClickManualWatering = () => {
-    console.log("Manual watering clicked");
-    setCount(count + 1);
-    setErrorMessage("Manual watering started"+count);
+    setManualWatering(!manualWatering);
+    runCommand(manualWatering ? CMD_SPRINKLERS_ON : CMD_SPRINKLERS_OFF);
+  }
+
+  const onClickManualFilling = () => {
+    setManualFilling(!manualFilling);
+    runCommand(manualFilling ? CMD_INLET_OPEN : CMD_INLET_CLOSE);
   }
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={machineStatus}
+        data={controllerStatus}
         numColumns={2}
         renderItem={renderCard}
         keyExtractor={(_, index) => index.toString()}
@@ -51,18 +98,18 @@ const HomeScreen: React.FC = ({  }) => {
         contentContainerStyle={styles.flatListContainer}
       />
       <View style={styles.toggleContainer}>
-        <TouchableOpacity
-          style={[styles.toggleButton, { backgroundColor: system1 ? 'green' : 'grey' , marginBottom:5}]}
-          onPress={() => {onClickManualWatering();setSystem1(!system1)}}
+        {sprinklerBtnEnabled && <TouchableOpacity
+          style={[styles.toggleButton, { backgroundColor: manualWatering ? styles.statusGreen.color : styles.statusRed.color , marginBottom:5}]}
+          onPress={() => {onClickManualWatering()}}
         >
-          <Text style={styles.toggleText}>Sprinklers: {system1 ? 'On' : 'Off'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleButton, { backgroundColor: system2 ? 'green' : 'grey' , marginBottom:5}]}
-          onPress={() => setSystem2(!system2)}
+          <Text style={styles.toggleText}>TURN SPRINKLERS {manualWatering ? 'ON' : 'OFF'}</Text>
+        </TouchableOpacity>}
+        {fillingBtnEnabled && <TouchableOpacity
+          style={[styles.toggleButton, { backgroundColor: manualFilling ? styles.statusGreen.color : styles.statusRed.color , marginBottom:5}]}
+          onPress={() => onClickManualFilling()}
         >
-          <Text style={styles.toggleText}>Filling: {system2 ? 'On' : 'Off'}</Text>
-        </TouchableOpacity>
+          <Text style={styles.toggleText}>TURN FILLING {manualFilling ? 'ON' : 'OFF'}</Text>
+        </TouchableOpacity>}
         {!isConnected && <TouchableOpacity
           style={[styles.toggleButton, { backgroundColor: styles.buttonBlue.color , marginBottom:5}]}
           onPress={() => {connect()}}

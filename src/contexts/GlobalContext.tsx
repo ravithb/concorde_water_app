@@ -1,12 +1,14 @@
 import { Dispatch, SetStateAction, createContext } from "react";
+import { Device } from "react-native-ble-plx";
+
+export interface Message {
+  type: string;
+  message: string;
+}
 
 interface GlobalContext {
-  errorMessage?: string;
-  setErrorMessage: Dispatch<SetStateAction<string>>;
-  infoMessage?: string;
-  setInfoMessage: Dispatch<SetStateAction<string>>;
-  successMessage?: string;
-  setSuccessMessage: Dispatch<SetStateAction<string>>;
+  message: Message | null;
+  setMessage: Dispatch<SetStateAction<Message | null>>;
   waterLevel: string;
   setWaterLevel: Dispatch<SetStateAction<string>>;
   sprinkelerStatus: string;
@@ -20,18 +22,18 @@ interface GlobalContext {
   manualFilling: boolean;
   setManualFilling: Dispatch<SetStateAction<boolean>>;
   logs: string[];
-  setLogs: Dispatch<SetStateAction<string[]>>;
+  appendLog: (log: string) => void;
   isConnected: boolean;
   connect: () => void;
+  setErrorMessage: (m:string) => void;
+  setInfoMessage: (m:string) => void;
+  setSuccessMessage: (m:string) => void;
+  runCommand: (cmd: string) => void;
 }
 
 const GlobalContext = createContext<GlobalContext>({
-  errorMessage : "",
-  setErrorMessage: () => {},
-  infoMessage: "",
-  setInfoMessage: () => {},
-  successMessage: "",
-  setSuccessMessage: () => {},
+  message : null,
+  setMessage: () => {},
   waterLevel: "",
   setWaterLevel: () => {},
   sprinkelerStatus: "",
@@ -45,9 +47,12 @@ const GlobalContext = createContext<GlobalContext>({
   manualFilling: false,
   setManualFilling: () => {},
   logs: [],
-  setLogs: () => {},
+  appendLog: () => {},
   isConnected: false,  
-  connect: () => {}
-
+  connect: () => {},
+  setInfoMessage: () => {},
+  setErrorMessage: () => {},
+  setSuccessMessage: () => {},
+  runCommand: () => {}
 });
 export default GlobalContext;

@@ -5,15 +5,45 @@ export function getColor(type: string, value: string, isConnected:boolean): stri
     return styles.statusGray.color;
   }
   if (type === "WaterLevel") {
-    if (value === "Low") {
-      return styles.statusRed.color;
-    } else if (value === "Medium") {
-      return styles.statusYellow.color;
-    } else {
-      return styles.statusGreen.color;
+    switch(value) {
+      case "LOW":
+        return styles.statusRed.color;
+      case "MED":
+        return styles.statusYellow.color;
+      case "HIGH":
+        return styles.statusGreen.color;
+      case "--":
+      case "":
+      default:
+        return styles.statusGray.color;
     }
 
-  } else {
-    return value === "ON" ? styles.statusGreen.color : styles.statusRed.color;
+  } else if(type === "InletValveStatus" || type === "SprinklerStatus" ) {
+    switch(value) {
+      case "OPEN":
+        return styles.statusGreen.color;
+      case "CLOSED":
+        return styles.statusBlue.color;
+      case "--":
+      case "":
+        return styles.statusGray.color;
+      default:
+        return styles.statusYellow.color;
+    }
+  }else {
+    switch(value) {
+      case "ON":
+        return styles.statusGreen.color;
+      case "FAILED":
+        return styles.statusRed.color;
+      case "OFF":
+        return styles.statusBlue.color
+      case "--":
+      case "":
+        return styles.statusGray.color;
+      default:
+        return styles.statusYellow.color;
+    }
+
   }
 }

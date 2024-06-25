@@ -1,15 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { ScrollView, Text } from 'react-native';
 import { styles } from '../styles/styles';
+import GlobalContext from '../contexts/GlobalContext';
 
 const LogScreen: React.FC = () => {
-  const logs = [
-    'Log entry 1',
-    'Log entry 2',
-    'Log entry 3',
-    'Log entry 4',
-    'Log entry 5',
-  ];
+  const {logs} = useContext(GlobalContext);
 
   return (
     <ScrollView style={styles.logContainer}>
