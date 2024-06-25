@@ -41,7 +41,6 @@ const GlobalState: React.FC<GlobalStateProps> = ({ children }) => {
     connectBLEDevice,
     disconnectBLEDevice,
     disconnectHandler,
-    connectedDevice,
     controller,
     sendCommand
   } = useBLE({ notifyLogs, notifyStatus });
@@ -59,8 +58,8 @@ const GlobalState: React.FC<GlobalStateProps> = ({ children }) => {
       }
     })();
     return () => {
-      if (connectedDevice != null) {
-        disconnectBLEDevice(connectedDevice);
+      if (controller != null) {
+        disconnectBLEDevice(controller);
       }
       if (timeoutHandle != null) {
         clearTimeout(timeoutHandle);
@@ -69,35 +68,42 @@ const GlobalState: React.FC<GlobalStateProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    setIsConnected(connectedDevice != null);
-    if (connectedDevice != null) {
-      console.log("Connected to controller", connectedDevice.name);
-      setInfoMessage("Connected to controller " + connectedDevice.name);
-    } else {
-      setErrorMessage("Failed to connect to controller");
-    }
-  }, [connectedDevice]);
+    
+    (async () => {
+      console.log("Scanning complete. found controller ", controller);
+      if (controller == null) {
+        return;
+      }
+
+      if (controller) {
+        await connectBLEDevice(controller);
+        disconnectHandler(controller, () => {
+          console.log("Disconnected from controller");
+          setErrorMessage("Disconnected from controller");
+          setIsConnected(false);
+          // connect();
+        }, (error: any) => {
+          console.error("Error disconnecting from device", error);
+        });
+        setIsConnected(controller != null);
+        if (controller != null) {
+          console.log("Connected to controller", controller.name);
+          setInfoMessage("Connected to controller " + controller.name);
+        } else {
+          setErrorMessage("Failed to connect to controller");
+        }
+
+      } else {
+        console.log("CMFC Irrigation Controller not found");
+        setErrorMessage("CMFC Irrigation Controller not found");
+        setIsConnected(false);
+      }
+    })();
+     
+  }, [controller]);
 
   useEffect(() => {
-    console.log("Scanning complete. found controller ", controller);
-    if (controller == null) {
-      return;
-    }
-
-    if (controller) {
-      connectBLEDevice(controller);
-      disconnectHandler(controller, () => {
-        console.log("Disconnected from controller");
-        setErrorMessage("Disconnected from controller");
-        // connect();
-      }, (error: any) => {
-        console.error("Error disconnecting from device", error);
-      });
-
-    } else {
-      console.log("CMFC Irrigation Controller not found");
-      setErrorMessage("CMFC Irrigation Controller not found");
-    }
+    
   }, [controller]);
 
   const requestBLEPermissions = async () => {
@@ -148,8 +154,8 @@ const GlobalState: React.FC<GlobalStateProps> = ({ children }) => {
   }
 
   const runCommand = (cmd: string) => {
-    if (connectedDevice != null) {
-      sendCommand(connectedDevice, cmd);
+    if (controller != null) {
+      sendCommand(controller, cmd);
     } else {
       setErrorMessage("Not connected to controller");
     }

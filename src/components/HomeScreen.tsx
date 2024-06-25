@@ -55,8 +55,10 @@ const HomeScreen: React.FC = ({  }) => {
     }else if((sprinkelerStatus === "--" && pumpStatus === "--") 
       || (sprinkelerStatus == "CLOSED")) {
       setSprinkerBtnEnabled(true);
+      setManualWatering(true);
     }else{
       setSprinkerBtnEnabled(false);
+      setManualWatering(false);
     }
 
     if(inletValveStatus === "OPEN") {

@@ -10,7 +10,7 @@ export function getColor(type: string, value: string, isConnected:boolean): stri
         return styles.statusRed.color;
       case "MED":
         return styles.statusYellow.color;
-      case "HIGH":
+      case "FULL":
         return styles.statusGreen.color;
       case "--":
       case "":

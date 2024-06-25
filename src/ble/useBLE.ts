@@ -17,7 +17,6 @@ interface BluetoothLowEnergyApi {
   controller: Device | null;
   connectBLEDevice(device: Device): void;
   disconnectBLEDevice(device: Device): void;
-  connectedDevice: Device | null;
   disconnectHandler(device: Device, onDisconnect: Function, onError: Function | null): void;
   sendCommand(device: Device, command: string): void;
 }
@@ -30,8 +29,9 @@ const CHARACTERISTIC_COMMANDS_UUID = "c0ae3003-da8a-45c6-a5c5-fbad540c2bf3";
 
 function useBLE({notifyStatus, notifyLogs}:BLEListeners): BluetoothLowEnergyApi {
   const bleManager = useMemo(() => new BleManager(), []);
-  const [controller, setController] = useState<Device | null>(null);
-  const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
+  const [controller, setController] = useState<Device | null>(null);  
+  const [statusMonitorSubscription, setStatusMonitorSubscription ] = useState<any | null>(null);
+  const [logsMonitorSubscription, setLogsMonitorSubscription ] = useState<any | null>(null);
 
   const requestAndroid31Permissions = async () => {
     const bluetoothScanPermissions = await PermissionsAndroid.requestMultiple([
@@ -91,7 +91,7 @@ function useBLE({notifyStatus, notifyLogs}:BLEListeners): BluetoothLowEnergyApi 
   const startDataListener = async (device: Device) => {
     if(device != null) {
       console.log("Starting data listener for device", device.name);
-      device.monitorCharacteristicForService(
+      const $sm = device.monitorCharacteristicForService(
         SERVICE_UUID,
         CHARACTERISTIC_STATUS_UUID,
         (error, characteristic) => {
@@ -108,7 +108,7 @@ function useBLE({notifyStatus, notifyLogs}:BLEListeners): BluetoothLowEnergyApi 
           notifyStatus(statusLine);
         }
       );
-      device.monitorCharacteristicForService(
+      const $lm = device.monitorCharacteristicForService(
         SERVICE_UUID,
         CHARACTERISTIC_LOGS_UUID,
         (error, characteristic) => {
@@ -121,10 +121,11 @@ function useBLE({notifyStatus, notifyLogs}:BLEListeners): BluetoothLowEnergyApi 
             return;
           }
           const logLine = base64.decode(characteristic?.value);
-          console.log("Logs characteristic value: ", logLine);
           notifyLogs(logLine);
         }
       );
+      setStatusMonitorSubscription($sm);
+      setLogsMonitorSubscription($lm);
     }
   };
 
@@ -132,7 +133,6 @@ function useBLE({notifyStatus, notifyLogs}:BLEListeners): BluetoothLowEnergyApi 
     try{
       const deviceConnection = await bleManager.connectToDevice(device.id);
       bleManager.requestMTUForDevice(device.id, 128);
-      setConnectedDevice(deviceConnection);
       await deviceConnection.discoverAllServicesAndCharacteristics();
       await bleManager.stopDeviceScan();
       startDataListener(deviceConnection);
@@ -146,7 +146,6 @@ function useBLE({notifyStatus, notifyLogs}:BLEListeners): BluetoothLowEnergyApi 
     console.log("Disconnecting from device", device.name);
     try{
       const deviceConnection = await bleManager.cancelDeviceConnection(device.id);
-      setConnectedDevice(null);      
     }catch(e){
       console.error("Error disconnecting from device", e); 
     }
@@ -157,7 +156,14 @@ function useBLE({notifyStatus, notifyLogs}:BLEListeners): BluetoothLowEnergyApi 
       if(error && onError) {
         onError(error);
       }
+      if(statusMonitorSubscription != null) {
+        statusMonitorSubscription.remove();
+      }
+      if(logsMonitorSubscription != null) {
+        logsMonitorSubscription.remove();
+      }
       onDisconnect(device);
+      setController(null);
     });
   }
 
@@ -175,7 +181,6 @@ function useBLE({notifyStatus, notifyLogs}:BLEListeners): BluetoothLowEnergyApi 
     controller,
     connectBLEDevice,
     disconnectBLEDevice,
-    connectedDevice,
     disconnectHandler,
     sendCommand
   };
